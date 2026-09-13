@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Editing Prompt Vault</title>
+    <style>
+        :root[data-theme="dark"] {
+            --bg: #0f172a; --panel: #1e293b; --panel-hover: #27354f; --border: #334155;
+            --accent: #38bdf8; --text: #f8fafc; --text-muted: #cbd5e1; --pinned: #f59e0b;
+            --card-pinned-bg: linear-gradient(145deg, #1e293b, #2d261e); --cat-bar-bg: rgba(30,41,59,0.5);
+        }
+        :root[data-theme="light"] {
+            --bg: #f8fafc; --panel: #ffffff; --panel-hover: #f1f5f9; --border: #cbd5e1;
+            --accent: #0284c7; --text: #0f172a; --text-muted: #475569; --pinned: #d97706;
+            --card-pinned-bg: linear-gradient(145deg, #ffffff, #fffbeb); --cat-bar-bg: rgba(226,232,240,0.6);
+        }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 950px; margin: 30px auto; padding: 0 20px; background: var(--bg); color: var(--text); transition: background 0.2s, color 0.2s; }
+        h1 { font-size: 1.5rem; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+        .toolbar input, .toolbar select, .toolbar button { padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font-size: 0.9rem; }
+        .toolbar input#search { flex: 1; min-width: 180px; }
+        button { cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+        button:hover { background: var(--panel-hover); }
+        .btn-primary { background: var(--accent); color: var(--bg); font-weight: 600; border: none; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-danger { color: #f87171; border-color: #7f1d1d; }
+        .btn-danger:hover { background: #450a0a; color: #fff; }
+        .cat-manager-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; padding: 12px; background: var(--cat-bar-bg); border: 1px dashed var(--border); border-radius: 8px; align-items: center; }
+        .cat-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--panel); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; color: var(--text-muted); }
+        .cat-badge.pinned-cat { border-color: var(--pinned); background: rgba(245,158,11,0.12); color: var(--pinned); }
+        .cat-badge button { background: none; border: none; color: inherit; cursor: pointer; opacity: 0.7; font-size: 0.75rem; padding: 0; }
+        .cat-badge button:hover { opacity: 1; }
+        .section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin: 25px 0 10px 0; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.15s ease; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card.pinned-card { border-color: var(--pinned); background: var(--card-pinned-bg); }
+        .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .card-tag { font-size: 0.7rem; text-transform: uppercase; color: var(--accent); font-weight: 600; background: rgba(56,189,248,0.12); padding: 2px 8px; border-radius: 4px; }
+        .card-actions { display: flex; gap: 6px; }
+        .card-actions button { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 0.8rem; border-radius: 4px; }
+        .card-actions button:hover { color: var(--text); background: rgba(128,128,128,0.1); }
+        .card-actions button.pin-btn.active { color: var(--pinned); }
+        .card-body { font-size: 0.9rem; color: var(--text-muted); line-height: 1.4; cursor: pointer; margin-bottom: 12px; word-break: break-word; }
+        .card-footer { font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between; align-items: center; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; width: 100%; max-width: 500px; padding: 24px; color: var(--text); }
+        .modal h2 { margin-top: 0; font-size: 1.25rem; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8rem; margin-bottom: 6px; color: var(--text-muted); }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.95rem; }
+        .form-group textarea { resize: vertical; min-height: 90px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; }
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #22c55e; color: #000; padding: 12px 24px; border-radius: 6px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .toast.show { opacity: 1; }
+        .file-input { display: none; }
+    </style>
+</head>
+<body>
+    <h1>
+        <span>Photo Editing Prompt Vault</span>
+        <div style="font-size: 0.8rem; display: flex; gap: 8px;">
+            <button onclick="toggleTheme()" id="themeBtn">☀ Light Theme</button>
+            <button class="btn-primary" onclick="openModal()">+ New Prompt</button>
+        </div>
+    </h1>
+    <div class="toolbar">
+        <input type="text" id="search" placeholder="Search prompts or categories..." oninput="render()">
+        <select id="categoryFilter" onchange="render()"><option value="">All Categories</option></select>
+        <button onclick="exportJSON()">Export JSON</button>
+        <button onclick="document.getElementById('importFile').click()">Import JSON</button>
+        <input type="file" id="importFile" class="file-input" accept=".json" onchange="importJSON(event)">
+    </div>
+    <div class="cat-manager-bar">
+        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">CATEGORIES:</span>
+        <div id="categoryChips" style="display: flex; gap: 6px; flex-wrap: wrap; flex: 1;"></div>
+        <button style="font-size: 0.75rem; padding: 4px 10px;" onclick="addCategoryPromptShortcut()">+ Add Category</button>
+    </div>
+    <div id="pinnedSection"></div>
+    <div id="otherSection"></div>
+    <div class="toast" id="toast">Copied to clipboard!</div>
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2 id="modalTitle">Add Prompt</h2>
+            <input type="hidden" id="editId">
+            <div class="form-group"><label>Category</label><input type="text" id="promptCategory" list="categorySuggestions" placeholder="e.g. Portrait Retouching"><datalist id="categorySuggestions"></datalist></div>
+            <div class="form-group"><label>Prompt Text</label><textarea id="promptText" placeholder="Enter full editing/generation prompt..."></textarea></div>
+            <div class="modal-buttons"><button onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="savePrompt()">Save Prompt</button></div>
+        </div>
+    </div>
+    <script>
+        const MASTER_PROMPTS = [
+            { id: "1", tag: "Portrait Retouching", text: "Retouch this portrait naturally. Remove temporary blemishes and uneven redness while preserving pores, freckles, facial lines, face shape, expression and identity. Keep hair, clothing and background unchanged.", pinned: false },
+            { id: "2", tag: "Portrait Retouching", text: "Improve skin tone subtly and remove only temporary imperfections. Preserve pores, freckles, fine lines and natural facial texture. Do not reshape the face or change the person's identity.", pinned: false },
+            { id: "3", tag: "Portrait Retouching", text: "Slightly improve eye clarity and brightness while preserving exact eye shape, color and natural texture. Reduce mild redness without changing the expression.", pinned: false },
+            { id: "4", tag: "Portrait Retouching", text: "Reduce under-eye darkness and fatigue naturally while preserving facial anatomy, skin texture and the original light direction.", pinned: false },
+            { id: "5", tag: "Portrait Retouching", text: "Brighten visible tooth staining slightly while preserving natural tooth shape, lips, jawline and expression. Avoid an artificial white effect.", pinned: false },
+            { id: "6", tag: "Portrait Retouching", text: "Polish this selfie by correcting exposure, white balance and minor lens distortion. Preserve face, hair, clothing, pose and natural skin texture.", pinned: false },
+            { id: "7", tag: "Portrait Retouching", text: "Give this portrait a refined editorial finish with controlled contrast, accurate skin tones and subtle retouching. Preserve identity and facial structure.", pinned: false },
+            { id: "8", tag: "Portrait Retouching", text: "Improve hair definition and reduce distracting flyaways while preserving hairstyle, color, face, clothing and background.", pinned: false },
+            { id: "9", tag: "Portrait Retouching", text: "Remove only [blemish/spot] from the face and reconstruct the nearby skin naturally. Preserve pores, facial structure, identity and expression.", pinned: false },
+            { id: "10", tag: "Portrait Retouching", text: "Make this selfie look like a professionally captured portrait. Improve lighting and clarity while keeping the person's appearance authentic and recognizable.", pinned: false },
+            { id: "11", tag: "Headshots", text: "Turn this photo into a professional LinkedIn headshot. Preserve exact identity, face, hairstyle and clothing. Use clean neutral lighting and a subtle studio background.", pinned: false },
+            { id: "12", tag: "Headshots", text: "Create a polished corporate headshot with soft professional lighting and a neutral background. Keep facial features, expression and proportions unchanged.", pinned: false },
+            { id: "13", tag: "Headshots", text: "Prepare this portrait for a professional resume. Improve exposure and clarity, use a clean understated background and preserve the person's natural appearance.", pinned: false },
+            { id: "14", tag: "Headshots", text: "Create an executive portrait with refined studio lighting and restrained retouching. Preserve identity, face shape, hairstyle and clothing.", pinned: false },
+            { id: "15", tag: "Headshots", text: "Standardize this portrait for a company directory. Keep the subject unchanged while using even lighting and a clean neutral background.", pinned: false },
+            { id: "16", tag: "Headshots", text: "Turn this image into a professional speaker-bio portrait. Preserve identity and expression and use subtle editorial lighting.", pinned: false },
+            { id: "17", tag: "Headshots", text: "Create a simple official-looking portrait with even lighting and a plain background. Do not beautify, stylize or reshape the person.", pinned: false },
+            { id: "18", tag: "Headshots", text: "Replace only the background with a modern professional office. Match perspective and lighting while leaving the person untouched.", pinned: false },
+            { id: "19", tag: "Headshots", text: "Replace the background with a softly lit studio backdrop. Preserve subject edges, face, clothing and hair details.", pinned: false },
+            { id: "20", tag: "Headshots", text: "Make this portrait match a professional team-photo style with consistent background and lighting. Preserve the person's exact identity.", pinned: false },
+            { id: "21", tag: "Background Replacement", text: "Replace the background with a seamless light-gray studio backdrop. Preserve the main subject exactly and add realistic contact shadows.", pinned: false },
+            { id: "22", tag: "Background Replacement", text: "Replace the background with a clean white studio background. Preserve subject edges, proportions, lighting and natural shadows.", pinned: false },
+            { id: "23", tag: "Background Replacement", text: "Replace the background with a modern office and match the original perspective, depth of field and light direction.", pinned: false },
+            { id: "24", tag: "Background Replacement", text: "Replace the background with a realistic green park. Preserve the subject, pose, clothing and original lighting direction.", pinned: false },
+            { id: "25", tag: "Background Replacement", text: "Replace the background with a tasteful luxury interior. Match subject scale, perspective, lighting and depth of field.", pinned: false },
+            { id: "26", tag: "Background Replacement", text: "Place the subject on a believable beach scene. Preserve the person exactly and match sunlight, shadows and color temperature.", pinned: false },
+            { id: "27", tag: "Background Replacement", text: "Replace the sky and background with a warm sunset while preserving the subject and foreground. Match reflections and ambient light.", pinned: false },
+            { id: "28", tag: "Background Replacement", text: "Remove all distracting tourists from the background and reconstruct the location naturally. Keep the main subject unchanged.", pinned: false },
+            { id: "29", tag: "Background Replacement", text: "Remove the unwanted person behind the subject and rebuild the background using matching texture, perspective and shadows.", pinned: false },
+            { id: "30", tag: "Background Replacement", text: "Simplify the background by removing only distracting objects while preserving the main subject and important environmental details.", pinned: false },
+            { id: "31", tag: "Object Removal", text: "Remove [object] from the table and reconstruct the tabletop and shadows naturally. Preserve everything else.", pinned: false },
+            { id: "32", tag: "Object Removal", text: "Remove the selected sign and reconstruct the wall or street background with matching perspective and texture.", pinned: false },
+            { id: "33", tag: "Object Removal", text: "Remove the visible cable and reconstruct the surface underneath naturally. Keep all other objects unchanged.", pinned: false },
+            { id: "34", tag: "Object Removal", text: "Remove the trash bin from the scene and reconstruct the ground and background realistically.", pinned: false },
+            { id: "35", tag: "Object Removal", text: "Remove the pole and rebuild the background behind it while preserving architecture and lighting.", pinned: false },
+            { id: "36", tag: "Object Removal", text: "Replace the selected chair with a [style] chair. Match scale, perspective, material, lighting and contact shadow.", pinned: false },
+            { id: "37", tag: "Object Removal", text: "Replace the selected bag with [bag]. Preserve hand position, pose, clothing and realistic fabric interaction.", pinned: false },
+            { id: "38", tag: "Object Removal", text: "Replace the selected object with [object]. Match size, perspective, surface reflections and shadows.", pinned: false },
+            { id: "39", tag: "Object Removal", text: "Remove only the selected person and reconstruct the scene naturally. Do not change other people or the main subject.", pinned: false },
+            { id: "40", tag: "Object Removal", text: "Remove only these distractions: [objects]. Preserve all unrelated people, products, architecture and composition.", pinned: false },
+            { id: "41", tag: "Lighting & Color", text: "Correct the exposure and recover shadow detail while preserving the original mood and color.", pinned: false },
+            { id: "42", tag: "Lighting & Color", text: "Recover detail in bright areas without making the overall image too dark. Preserve skin tones and scene colors.", pinned: false },
+            { id: "43", tag: "Lighting & Color", text: "Remove the unwanted color cast and restore neutral, accurate color while preserving the original atmosphere.", pinned: false },
+            { id: "44", tag: "Lighting & Color", text: "Transform the lighting into believable golden-hour sunlight with warm directional light and realistic long shadows.", pinned: false },
+            { id: "45", tag: "Lighting & Color", text: "Convert the lighting to soft professional studio light with gentle fill. Preserve subject, background and realistic skin texture.", pinned: false },
+            { id: "46", tag: "Lighting & Color", text: "Apply a restrained cinematic color grade with richer contrast and controlled highlights. Keep skin tones natural.", pinned: false },
+            { id: "47", tag: "Lighting & Color", text: "Give the image a bright editorial finish with clean whites, soft contrast and realistic colors.", pinned: false },
+            { id: "48", tag: "Lighting & Color", text: "Balance harsh direct-flash highlights and shadows while preserving facial features and scene detail.", pinned: false },
+            { id: "49", tag: "Lighting & Color", text: "Balance mixed indoor lighting and window exposure while preserving furniture, skin tones and true colors.", pinned: false },
+            { id: "50", tag: "Lighting & Color", text: "Make the edited object match the original scene's light direction, color temperature, shadow softness and exposure.", pinned: false },
+            { id: "51", tag: "Restoration", text: "Restore this old photograph by removing scratches, dust, stains and tears while preserving identity, clothing, composition and historical character.", pinned: false },
+            { id: "52", tag: "Restoration", text: "Repair damaged areas and reconstruct missing details conservatively. Do not modernize the face or clothing.", pinned: false },
+            { id: "53", tag: "Restoration", text: "Remove scratches and dust while retaining authentic film grain and natural photographic texture.", pinned: false },
+            { id: "54", tag: "Restoration", text: "Restore faded colors and contrast naturally without adding modern saturation or changing the scene.", pinned: false },
+            { id: "55", tag: "Restoration", text: "Improve clarity in this soft image while preserving natural texture and avoiding halos or artificial edges.", pinned: false },
+            { id: "56", tag: "Restoration", text: "Reduce digital noise while preserving hair, skin texture, fabric and small details.", pinned: false },
+            { id: "57", tag: "Restoration", text: "Brighten this low-light photograph, reduce noise and recover shadow detail while keeping the original nighttime mood.", pinned: false },
+            { id: "58", tag: "Restoration", text: "Upscale this portrait while preserving face shape, identity, hair, skin texture and clothing detail. Do not invent a new face.", pinned: false },
+            { id: "59", tag: "Restoration", text: "Restore this family photo while preserving each person's identity, expression, clothing and original composition.", pinned: false },
+            { id: "60", tag: "Restoration", text: "Repair visible tears and missing areas using surrounding visual information. Keep the original people, objects and era-specific appearance.", pinned: false },
+            { id: "61", tag: "Composition & Crop", text: "Expand the image to a 4:5 portrait format. Continue the background naturally and preserve the subject's position, scale and appearance.", pinned: false },
+            { id: "62", tag: "Composition & Crop", text: "Expand the image to 16:9 landscape by generating believable continuation at the sides. Match perspective and lighting.", pinned: false },
+            { id: "63", tag: "Composition & Crop", text: "Expand vertically to 9:16 for a social story. Preserve the subject and extend the environment naturally.", pinned: false },
+            { id: "64", tag: "Composition & Crop", text: "Create clean negative space on the left for headline text. Preserve the subject and original visual balance.", pinned: false },
+            { id: "65", tag: "Composition & Crop", text: "Create clean negative space on the right for text while keeping the subject and lighting unchanged.", pinned: false },
+            { id: "66", tag: "Composition & Crop", text: "Prepare the image for a 1:1 square crop using the smallest necessary crop. Preserve the subject and key context.", pinned: false },
+            { id: "67", tag: "Composition & Crop", text: "Reconstruct the missing portion of hair and head naturally using visible features as reference. Preserve identity.", pinned: false },
+            { id: "68", tag: "Composition & Crop", text: "Reconstruct the missing edge of the product so its full shape is visible. Match perspective and material.", pinned: false },
+            { id: "69", tag: "Composition & Crop", text: "Correct vertical lines and mild lens distortion while preserving building proportions and perspective.", pinned: false },
+            { id: "70", tag: "Composition & Crop", text: "Make the smallest possible crop or alignment adjustment to improve composition. Do not change the subject or scene.", pinned: false },
+            { id: "71", tag: "Product Photography", text: "Create a clean e-commerce product image with an uncluttered background and soft contact shadow. Preserve product shape, logo and labels.", pinned: false },
+            { id: "72", tag: "Product Photography", text: "Place the product on a pure white background with a realistic grounding shadow. Preserve edges, branding and colors.", pinned: false },
+            { id: "73", tag: "Product Photography", text: "Create a premium product advertisement with elegant studio lighting and controlled reflections. Preserve the exact product.", pinned: false },
+            { id: "74", tag: "Product Photography", text: "Reduce distracting glare without changing product geometry, materials, logo or label.", pinned: false },
+            { id: "75", tag: "Product Photography", text: "Improve package clarity while preserving the exact wording, logo placement and package design. Do not invent text.", pinned: false },
+            { id: "76", tag: "Product Photography", text: "Place the product naturally in a [kitchen/desk/living room] while preserving its proportions, branding, perspective and material.", pinned: false },
+            { id: "77", tag: "Product Photography", text: "Turn this cosmetics shot into a premium beauty campaign. Preserve packaging text, bottle shape and product color.", pinned: false },
+            { id: "78", tag: "Product Photography", text: "Prepare this product for an online marketplace main image. Clean the background, center the product and preserve its exact appearance.", pinned: false },
+            { id: "79", tag: "Product Photography", text: "Create a polished flat-lay composition around this product. Preserve the exact product, packaging and branding.", pinned: false },
+            { id: "80", tag: "Product Photography", text: "Correct exposure, white balance, clarity and background distractions without changing product geometry, labels or branding.", pinned: false },
+            { id: "81", tag: "Fashion & Beauty", text: "Change the subject's clothing to [outfit]. Preserve face, identity, body proportions, pose, hands, hairstyle and background.", pinned: false },
+            { id: "82", tag: "Fashion & Beauty", text: "Change only the clothing color to [color]. Preserve fabric texture, folds, logos and every other detail.", pinned: false },
+            { id: "83", tag: "Fashion & Beauty", text: "Give the subject a refined editorial fashion look with [style]. Preserve identity, pose and body proportions.", pinned: false },
+            { id: "84", tag: "Fashion & Beauty", text: "Place the subject in a premium fashion studio. Keep face, pose and clothing unchanged and match lighting and floor shadows.", pinned: false },
+            { id: "85", tag: "Fashion & Beauty", text: "Create a modern streetwear editorial while preserving the person's identity and important clothing details.", pinned: false },
+            { id: "86", tag: "Fashion & Beauty", text: "Turn this portrait into a refined beauty campaign image with soft diffused light and subtle retouching. Preserve pores and facial structure.", pinned: false },
+            { id: "87", tag: "Fashion & Beauty", text: "Improve jewelry clarity and highlights while preserving its exact design, placement and material.", pinned: false },
+            { id: "88", tag: "Fashion & Beauty", text: "Change the hairstyle to [style] while preserving the person's face, identity, expression and proportions.", pinned: false },
+            { id: "89", tag: "Fashion & Beauty", text: "Add [sunglasses] and match perspective, reflections and shadows. Keep the face and clothing unchanged except where naturally occluded.", pinned: false },
+            { id: "90", tag: "Fashion & Beauty", text: "Remove [accessory] and reconstruct the hair, skin or clothing underneath naturally. Preserve everything else.", pinned: false },
+            { id: "91", tag: "Travel & Social", text: "Polish this travel photo for social media with natural color, balanced exposure and clearer detail. Preserve the real location and subject.", pinned: false },
+            { id: "92", tag: "Travel & Social", text: "Remove distracting background tourists and reconstruct the location naturally. Keep the main subject unchanged.", pinned: false },
+            { id: "93", tag: "Travel & Social", text: "Enhance the sunset subtly while preserving realistic gradients, landscape detail and natural colors.", pinned: false },
+            { id: "94", tag: "Travel & Social", text: "Remove [objects] from the beach and reconstruct sand, water and shadows naturally.", pinned: false },
+            { id: "95", tag: "Travel & Social", text: "Improve this city-night photo by reducing noise and balancing neon highlights while preserving real architecture.", pinned: false },
+            { id: "96", tag: "Travel & Social", text: "Give this cafe image a premium lifestyle-editorial finish with natural light and realistic color. Preserve people and surroundings.", pinned: false },
+            { id: "97", tag: "Travel & Social", text: "Prepare this image for Instagram in a 4:5 format using crop or expansion. Preserve the subject and important details.", pinned: false },
+            { id: "98", tag: "Travel & Social", text: "Prepare this photo for a 9:16 story by expanding the canvas naturally and keeping the subject safely framed.", "pinned": false },
+            { id: "99", tag: "Travel & Social", text: "Enhance this food image for a restaurant menu. Improve exposure, color and texture without changing the dish or adding ingredients.", pinned: false },
+            { id: "100", tag: "Travel & Social", text: "Give this photo a final professional polish for publication. Correct exposure, color, clarity and small distractions while preserving identity, text, logos, composition and realistic texture.", "pinned": false }
+        ];
+
+        let prompts = loadData('photo_prompt_vault_data', MASTER_PROMPTS);
+        let pinnedCategories = loadData('photo_vault_pinned_cats', []);
+
+        let currentTheme = localStorage.getItem('photo_vault_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        updateThemeBtnText();
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            localStorage.setItem('photo_vault_theme', currentTheme);
+            updateThemeBtnText();
+        }
+
+        function updateThemeBtnText() {
+            document.getElementById('themeBtn').textContent = currentTheme === 'dark' ? '☀ Light Theme' : '🌙 Dark Theme';
+        }
+
+        function loadData(key, fallback) {
+            const data = localStorage.getItem(key);
+            if (data) { try { return JSON.parse(data); } catch(e) {} }
+            return fallback;
+        }
+
+        function saveStorage() {
+            localStorage.setItem('photo_prompt_vault_data', JSON.stringify(prompts));
+            localStorage.setItem('photo_vault_pinned_cats', JSON.stringify(pinnedCategories));
+            updateCategoryUI();
+        }
+
+        function getCategories() {
+            const set = new Set([...prompts.map(p => p.tag), ...pinnedCategories]);
+            return Array.from(set).sort();
+        }
+
+        function updateCategoryUI() {
+            const categories = getCategories();
+            const filterEl = document.getElementById('categoryFilter');
+            const currentFilter = filterEl.value;
+            filterEl.innerHTML = '<option value="">All Categories</option>' + 
+                categories.map(c => `<option value="${escapeHTML(c)}" ${c === currentFilter ? 'selected' : ''}>${escapeHTML(c)}</option>`).join('');
+
+            document.getElementById('categorySuggestions').innerHTML = categories.map(c => `<option value="${escapeHTML(c)}">`).join('');
+
+            const chipsEl = document.getElementById('categoryChips');
+            chipsEl.innerHTML = categories.map(cat => {
+                const isPinnedCat = pinnedCategories.includes(cat);
+                const count = prompts.filter(p => p.tag === cat).length;
+                return `
+                    <div class="cat-badge ${isPinnedCat ? 'pinned-cat' : ''}">
+                        <span onclick="filterByCategory('${escapeJs(cat)}')">${escapeHTML(cat)} (${count})</span>
+                        <button title="${isPinnedCat ? 'Unpin category' : 'Pin category'}" onclick="togglePinCategory('${escapeJs(cat)}')">★</button>
+                        <button title="Delete category and all its prompts" onclick="deleteCategory('${escapeJs(cat)}')">✕</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function escapeJs(str) {
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
+        }
+
+        function filterByCategory(cat) {
+            const el = document.getElementById('categoryFilter');
+            el.value = el.value === cat ? '' : cat;
+            render();
+        }
+
+        function togglePinCategory(cat) {
+            if (pinnedCategories.includes(cat)) {
+                pinnedCategories = pinnedCategories.filter(c => c !== cat);
+            } else {
+                pinnedCategories.push(cat);
+            }
+            saveStorage();
+            render();
+        }
+
+        function deleteCategory(cat) {
+            const count = prompts.filter(p => p.tag === cat).length;
+            if (confirm(`Delete category "${cat}" and its ${count} prompt(s)?`)) {
+                prompts = prompts.filter(p => p.tag !== cat);
+                pinnedCategories = pinnedCategories.filter(c => c !== cat);
+                if (document.getElementById('categoryFilter').value === cat) {
+                    document.getElementById('categoryFilter').value = '';
+                }
+                saveStorage();
+                render();
+            }
+        }
+
+        function addCategoryPromptShortcut() {
+            const newCat = prompt('Enter new category name:');
+            if (newCat && newCat.trim()) {
+                const trimmed = newCat.trim();
+                openModal();
+                document.getElementById('promptCategory').value = trimmed;
+            }
+        }
+
+        function render() {
+            updateCategoryUI();
+            const query = document.getElementById('search').value.toLowerCase();
+            const catFilter = document.getElementById('categoryFilter').value;
+
+            const filtered = prompts.filter(p => {
+                const matchesQuery = p.text.toLowerCase().includes(query) || p.tag.toLowerCase().includes(query);
+                const matchesCat = !catFilter || p.tag === catFilter;
+                return matchesQuery && matchesCat;
+            });
+
+            const pinned = filtered.filter(p => p.pinned || pinnedCategories.includes(p.tag));
+            const others = filtered.filter(p => !p.pinned && !pinnedCategories.includes(p.tag));
+
+            renderSection('pinnedSection', 'Pinned Prompts & Categories', pinned);
+            renderSection('otherSection', 'Prompt Library', others);
+        }
+
+        function renderSection(containerId, title, list) {
+            const container = document.getElementById(containerId);
+            if (list.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="section-title"><span>${title} (${list.length})</span></div>
+                <div class="grid">
+                    ${list.map(p => `
+                        <div class="card ${p.pinned || pinnedCategories.includes(p.tag) ? 'pinned-card' : ''}">
+                            <div>
+                                <div class="card-header">
+                                    <span class="card-tag">${escapeHTML(p.tag)} ${pinnedCategories.includes(p.tag) ? '★' : ''}</span>
+                                    <div class="card-actions">
+                                        <button class="pin-btn ${p.pinned ? 'active' : ''}" title="${p.pinned ? 'Unpin prompt' : 'Pin prompt'}" onclick="togglePin('${p.id}')">★</button>
+                                        <button title="Edit" onclick="editPrompt('${p.id}')">✎</button>
+                                        <button class="btn-danger" title="Delete" onclick="deletePrompt('${p.id}')">✕</button>
+                                    </div>
+                                </div>
+                                <div class="card-body" onclick="copyPrompt('${escapeJs(p.text)}')">${escapeHTML(p.text)}</div>
+                            </div>
+                            <div class="card-footer">
+                                <span>Click body to copy</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function copyPrompt(text) {
+            navigator.clipboard.writeText(text);
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1500);
+        }
+
+        function togglePin(id) {
+            const p = prompts.find(item => item.id === id);
+            if (p) {
+                p.pinned = !p.pinned;
+                saveStorage();
+                render();
+            }
+        }
+
+        function deletePrompt(id) {
+            if (confirm('Delete this prompt?')) {
+                prompts = prompts.filter(item => item.id !== id);
+                saveStorage();
+                render();
+            }
+        }
+
+        function openModal(id = null) {
+            document.getElementById('modalOverlay').classList.add('open');
+            if (id) {
+                const p = prompts.find(item => item.id === id);
+                document.getElementById('modalTitle').textContent = 'Edit Prompt';
+                document.getElementById('editId').value = p.id;
+                document.getElementById('promptCategory').value = p.tag;
+                document.getElementById('promptText').value = p.text;
+            } else {
+                document.getElementById('modalTitle').textContent = 'Add Prompt';
+                document.getElementById('editId').value = '';
+                document.getElementById('promptCategory').value = document.getElementById('categoryFilter').value || 'Portrait Retouching';
+                document.getElementById('promptText').value = '';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('open');
+        }
+
+        function editPrompt(id) {
+            openModal(id);
+        }
+
+        function savePrompt() {
+            const editId = document.getElementById('editId').value;
+            const tag = document.getElementById('promptCategory').value.trim() || 'General';
+            const text = document.getElementById('promptText').value.trim();
+
+            if (!text) {
+                alert('Please enter prompt text');
+                return;
+            }
+
+            if (editId) {
+                const p = prompts.find(item => item.id === editId);
+                if (p) {
+                    p.tag = tag;
+                    p.text = text;
+                }
+            } else {
+                prompts.unshift({
+                    id: Date.now().toString(),
+                    tag: tag,
+                    text: text,
+                    pinned: false
+                });
+            }
+
+            saveStorage();
+            closeModal();
+            render();
+        }
+
+        function exportJSON() {
+            const exportPayload = {
+                prompts: prompts,
+                pinnedCategories: pinnedCategories
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `photo_prompts_backup_${new Date().toISOString().slice(0,10)}.json`);
+            dlAnchorElem.click();
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    const importedPrompts = Array.isArray(parsed) ? parsed : parsed.prompts;
+                    const importedPinnedCats = Array.isArray(parsed) ? [] : (parsed.pinnedCategories || []);
+
+                    if (Array.isArray(importedPrompts)) {
+                        if (confirm(`Import ${importedPrompts.length} prompts? Replaces current vault data.`)) {
+                            prompts = importedPrompts;
+                            if (importedPinnedCats.length) pinnedCategories = importedPinnedCats;
+                            saveStorage();
+                            render();
+                        }
+                    } else {
+                        alert('Invalid JSON structure.');
+                    }
+                } catch(err) {
+                    alert('Error parsing JSON file.');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        render();
+    </script>
+</body>
+</html>
